@@ -1,4 +1,9 @@
 # Byte-compiled / optimized / DLL files
+game/.idea
+game/cache
+*.rpyc
+game/save/*
+
 __pycache__/
 *.py[cod]
 *$py.class
