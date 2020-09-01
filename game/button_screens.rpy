@@ -133,13 +133,6 @@ screen hide_butm(x, y, d):
         idle ("images/Buttons/hide_butm.png")
         action [Hide("hide_but"), Jump(d)]
 
-screen drag_img(jump_place):
-    imagemap:
-        idle ("images/b12.png")
-        ground "images/2.jpg"
-        hover "images/t10.png"
-        hotspot (0, 0, 100, 100) action [Hide("drag_img"), Jump(jump_place)]
-
 screen say_2:
     drag:
         drag_name "say"

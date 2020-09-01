@@ -22,19 +22,22 @@ init -1 python:
             return "Item: {}".format(self.name)
 
     class AreaEvent():
-        def __init__(self, rect=(0,0,100,100), traget_item=None):
+        def __init__(self, rect=(0,0,100,100), item=None, label=None):
             self.rect = rect
-            self.traget_item = traget_item
+            self.item = item
+            self.label = label
 
         def event(self, item):
-            if item == self.traget_item:
-                return True
+            if item is self.item:
+                # renpy.checkpoint()
+                renpy.jump(self.label)
+                return self
 
-            return False
+            return None
         
 
     class ToolBar(renpy.Displayable):
-        def __init__(self, back=None, base=None, springback=0.1, rect=(0,0,0,0), direction=0, items=[], num=8, margin=0.1, areaeven=AreaEvent(), **kwargs):
+        def __init__(self, back=None, base=None, springback=0.1, rect=(0,0,0,0), direction=0, num=8, margin=0.1, items=[], areaevens=[], **kwargs):
             
             renpy.Displayable.__init__(self, **kwargs)
 
@@ -59,13 +62,17 @@ init -1 python:
             self.x, self.y, self.w, self.h = rect
 
             self.items = items
-            self.areaeven = areaeven
+            self.areaevens = areaevens
             self.item_rects = []
             self.sensitive = False
             self.click_x = 0
             self.click_y = 0
+            self.dragging = False
 
 
+            # for areaeven in self.areaevens:
+
+            # calc item pos
             if direction == 0:
                 item_box = min(int(self.w / num), self.h)
                 for i in range(num):
@@ -83,6 +90,16 @@ init -1 python:
                 items[i].rect = self.item_rects[i]
                 items[i].index = i
 
+        def _reset(self):
+            for i in range(min(len(items), len(self.item_rects))):
+                items[i].rect = self.item_rects[i]
+                items[i].offset = __Fixed(0,0)
+                items[i].index = i
+            self.dragging = False
+            self.click_x = 0
+            self.click_y = 0
+            self.drag_item = None
+
         def show(self, layer='master'):
             ui.layer(layer)
             ui.add(self)
@@ -93,18 +110,30 @@ init -1 python:
             ui.remove(self)
             ui.close()
 
+        def set_evens(self, areaevens):
+            if type(areaevens) is list:
+                self.areaevens = areaevens
+            else:
+                self.areaevens = [areaevens]
+
+            self._reset()
+
         # Force a redraw on each interaction.
         def per_interact(self):
             renpy.redraw(self, 0)
 
-        def render(self, width, height, st, at):
+        def interact(self):
+            ui.interact()
 
+        def render(self, width, height, st, at):
             self.st = st
 
             rv = renpy.Render(width, height)
 
             for item in self.items:
                 x, y, w, h = item.rect
+                if w == 0 or h == 0:
+                    continue
                 ox, oy = item.offset.offset()
                 surf = renpy.render(item.pic, width, height, st, at)
                 rv.blit(surf, (x + ox, y + oy))
@@ -172,8 +201,12 @@ init -1 python:
 
                 if self.dragging:
 
-                    if __pos_area_in((x, y), self.areaeven.rect) and self.drag_item is self.areaeven.item:
-                        self.areaeven.event(item)
+                    for areaeven in self.areaevens:
+                        print("pos: ({}, {})".format(x, y))
+                        print("even rect: ({}, {}, {}, {})".format(*areaeven.rect))
+                        if __pos_area_in((x, y), areaeven.rect):
+                            evt = areaeven.event(self.drag_item)
+                            break;
 
                     self.dragging = False
 
@@ -183,6 +216,12 @@ init -1 python:
                 self.click_card = None
                 self.click_stack = None
                 self.drag_item = None
+
+                if evt is not None:
+                    self.drag_item.offset = __Fixed(0, 0)
+                    return evt
+                else:
+                    raise renpy.IgnoreEvent()
 
 
     class __Springback(object):
