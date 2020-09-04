@@ -14,7 +14,7 @@ label start:
     # show screen input(_("xxxx"), "xxx")
     "这里是个美女，请把茄子放到她胸前，可以解密"
 
-    default ev = AreaEvent(rect=(550, 250, 200, 200), item=eggplant, label='puzzle')
+    default ev = AreaEvent(rect=(500, 250, 200, 200), item=eggplant, label='puzzle')
 
     python:
         _window_hide()

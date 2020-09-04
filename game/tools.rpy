@@ -18,6 +18,11 @@ init -1 python:
                 ox, oy = self.offset.offset()
                 self.offset = __Springback(self, tb, x + ox, y + oy)
 
+        def center_pos(self):
+            x, y, w, h = self.rect
+            ox, oy = self.offset.offset()
+            return x + ox + w / 2, y + oy + h / 2
+
         def __repr__(self):
             return "Item: {}".format(self.name)
 
@@ -118,6 +123,14 @@ init -1 python:
 
             self._reset()
 
+        def set_items(self, items):
+            if type(items) is list:
+                self.items = items
+            else:
+                self.items = [items]
+
+            self._reset()
+
         # Force a redraw on each interaction.
         def per_interact(self):
             renpy.redraw(self, 0)
@@ -136,6 +149,8 @@ init -1 python:
                     continue
                 ox, oy = item.offset.offset()
                 surf = renpy.render(item.pic, width, height, st, at)
+                w, h = surf.get_size()
+                item.rect = x, y , w, h
                 rv.blit(surf, (x + ox, y + oy))
             
             return rv
@@ -179,7 +194,7 @@ init -1 python:
 
             if ev.type == pygame.MOUSEMOTION or (ev.type == pygame.MOUSEBUTTONUP and ev.button == 1):
 
-                if abs(x - self.click_x) > 7 or abs(y - self.click_y) > 7:
+                if abs(x - self.click_x) > 7 or abs(y - self.click_y) > 7 and self.drag_item is not None:
                     self.dragging = True
 
                 if self.dragging and self.drag_item is not None:
@@ -199,12 +214,12 @@ init -1 python:
 
                 evt = None
 
-                if self.dragging:
+                if self.dragging and self.drag_item is not None:
 
                     for areaeven in self.areaevens:
-                        print("pos: ({}, {})".format(x, y))
+                        print("pos: ({}, {})".format(*self.drag_item.center_pos()))
                         print("even rect: ({}, {}, {}, {})".format(*areaeven.rect))
-                        if __pos_area_in((x, y), areaeven.rect):
+                        if __pos_area_in(self.drag_item.center_pos(), areaeven.rect):
                             evt = areaeven.event(self.drag_item)
                             break;
 
@@ -218,7 +233,6 @@ init -1 python:
                 self.drag_item = None
 
                 if evt is not None:
-                    self.drag_item.offset = __Fixed(0, 0)
                     return evt
                 else:
                     raise renpy.IgnoreEvent()
